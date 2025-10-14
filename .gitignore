@@ -1,0 +1,39 @@
+# Node / Build tools (not used, but common in JS projects)
+node_modules/
+dist/
+build/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+*.old
+
+# Optional: Python HTTP server artifacts
+__pycache__/
+*.pyc
+
+# Zips or packaged archives
+*.zip
+*.tar.gz
+
+# Personal / local environment
+.env
+.env.local
+
+# System files
+ehthumbs.db
+Desktop.ini
