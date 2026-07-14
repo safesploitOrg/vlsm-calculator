@@ -1,4 +1,6 @@
 import { allocateVlsm } from './core/allocator.js';
+import { getAddressingMode } from './core/addressing-modes.js';
+import { compareCidrRanges } from './core/cidr.js';
 import { validateAllocationRequest } from './core/validation.js';
 import { createCsv } from './export/csv-export.js';
 import { downloadBlob, downloadText } from './export/download.js';
@@ -22,10 +24,12 @@ import {
   selectedColumnKeys
 } from './ui/table.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 const form = document.getElementById('calculator-form');
 const parentInput = document.getElementById('parent-cidr');
+const addressingModeInput = document.getElementById('addressing-mode');
+const modeHint = document.getElementById('mode-hint');
 const subnetRows = document.getElementById('subnet-rows');
 const subnetRowTemplate = document.getElementById('subnet-row-template');
 const addSubnetButton = document.getElementById('add-subnet-button');
@@ -39,6 +43,10 @@ const resultStatus = document.getElementById('result-status');
 const copyButton = document.getElementById('copy-button');
 const spreadsheetButton = document.getElementById('spreadsheet-button');
 const csvButton = document.getElementById('csv-button');
+const overlapForm = document.getElementById('overlap-form');
+const overlapLeftInput = document.getElementById('overlap-left');
+const overlapRightInput = document.getElementById('overlap-right');
+const overlapResult = document.getElementById('overlap-result');
 
 let currentResult = null;
 let browserStorage = null;
@@ -52,8 +60,11 @@ try {
 function calculatorState() {
   return {
     parentCidr: parentInput.value,
+    addressingMode: addressingModeInput.value,
     subnets: readSubnetRows(subnetRows),
     selectedColumns: selectedColumnKeys(columnPicker),
+    overlapLeft: overlapLeftInput.value,
+    overlapRight: overlapRightInput.value,
     hasGeneratedPlan: currentResult !== null
   };
 }
@@ -65,6 +76,9 @@ function persistCalculatorState() {
 function restoreCalculatorState(state) {
   if (typeof state.parentCidr === 'string') {
     parentInput.value = state.parentCidr;
+  }
+  if ([...addressingModeInput.options].some((option) => option.value === state.addressingMode)) {
+    addressingModeInput.value = state.addressingMode;
   }
 
   const savedSubnets = Array.isArray(state.subnets)
@@ -82,6 +96,19 @@ function restoreCalculatorState(state) {
       input.checked = selected.has(input.value);
     });
   }
+
+  if (typeof state.overlapLeft === 'string') {
+    overlapLeftInput.value = state.overlapLeft;
+  }
+  if (typeof state.overlapRight === 'string') {
+    overlapRightInput.value = state.overlapRight;
+  }
+}
+
+function updateAddressingModeHint() {
+  const policy = getAddressingMode(addressingModeInput.value);
+  modeHint.textContent = `${policy.description} Supported subnet range: ` +
+    `/${policy.minimumPrefix}–/${policy.maximumPrefix}.`;
 }
 
 function renderResult(result) {
@@ -94,6 +121,7 @@ function renderResult(result) {
   document.getElementById('summary-requested').textContent = result.summary.requestedHosts.toLocaleString();
   document.getElementById('summary-allocated').textContent = result.summary.allocatedAddresses.toLocaleString();
   document.getElementById('summary-remaining').textContent = result.summary.remainingAddresses.toLocaleString();
+  document.getElementById('result-mode').textContent = result.addressingMode.label;
 
   const utilisation = result.summary.utilisation;
   const progressBar = document.querySelector('.progress-track');
@@ -111,6 +139,7 @@ function generatePlan(event, { scroll = true } = {}) {
 
   const validation = validateAllocationRequest({
     parentCidr: parentInput.value,
+    addressingMode: addressingModeInput.value,
     subnets: readSubnetRows(subnetRows)
   });
 
@@ -218,12 +247,44 @@ function resetCalculator() {
 
   clearCalculatorState(browserStorage);
   form.reset();
+  overlapForm.reset();
   resetSubnetRows(subnetRows, subnetRowTemplate);
   clearMessages(messages);
   currentResult = null;
   resultsSection.hidden = true;
   resultStatus.textContent = '';
+  overlapResult.hidden = true;
+  overlapResult.textContent = '';
+  updateAddressingModeHint();
   parentInput.focus();
+}
+
+function checkOverlap(event) {
+  event.preventDefault();
+  overlapResult.classList.remove('is-overlap', 'is-clear', 'is-error');
+
+  try {
+    const comparison = compareCidrRanges(overlapLeftInput.value, overlapRightInput.value);
+    const { left, right } = comparison;
+    if (comparison.relationship === 'equal') {
+      overlapResult.textContent = `${left.cidr} and ${right.cidr} are the same address range.`;
+    } else if (comparison.relationship === 'contains') {
+      overlapResult.textContent = `${left.cidr} contains and overlaps ${right.cidr}.`;
+    } else if (comparison.relationship === 'contained-by') {
+      overlapResult.textContent = `${left.cidr} is contained by and overlaps ${right.cidr}.`;
+    } else if (comparison.relationship === 'adjacent') {
+      overlapResult.textContent = `${left.cidr} and ${right.cidr} are adjacent and do not overlap.`;
+    } else {
+      overlapResult.textContent = `${left.cidr} and ${right.cidr} do not overlap.`;
+    }
+    overlapResult.classList.add(comparison.overlaps ? 'is-overlap' : 'is-clear');
+  } catch (error) {
+    overlapResult.textContent = error.message;
+    overlapResult.classList.add('is-error');
+  }
+
+  overlapResult.hidden = false;
+  persistCalculatorState();
 }
 
 form.addEventListener('submit', generatePlan);
@@ -261,6 +322,14 @@ columnPicker.addEventListener('change', () => {
 });
 
 form.addEventListener('input', persistCalculatorState);
+overlapForm.addEventListener('input', persistCalculatorState);
+overlapForm.addEventListener('submit', checkOverlap);
+addressingModeInput.addEventListener('change', () => {
+  updateAddressingModeHint();
+  currentResult = null;
+  resultsSection.hidden = true;
+  persistCalculatorState();
+});
 
 resetButton.addEventListener('click', resetCalculator);
 copyButton.addEventListener('click', copyTable);
@@ -273,6 +342,8 @@ if (savedState) {
 } else {
   resetSubnetRows(subnetRows, subnetRowTemplate);
 }
+
+updateAddressingModeHint();
 
 if (savedState?.hasGeneratedPlan) {
   generatePlan(null, { scroll: false });

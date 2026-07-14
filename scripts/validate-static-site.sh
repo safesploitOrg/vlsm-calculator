@@ -6,6 +6,7 @@ public/index.html
 public/assets/css/app.css
 public/assets/icons/favicon-calculator-100.png
 public/assets/js/app.js
+public/assets/js/core/addressing-modes.js
 public/assets/js/core/allocator.js
 public/assets/js/core/cidr.js
 public/assets/js/core/ipv4.js

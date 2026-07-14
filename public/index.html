@@ -38,10 +38,21 @@
           <button class="button button-quiet" id="reset-button" type="button">Reset page</button>
         </div>
 
-        <div class="field-group parent-field">
-          <label for="parent-cidr">Parent network</label>
-          <div class="input-hint" id="parent-hint">IPv4 address with CIDR prefix</div>
-          <input id="parent-cidr" name="parentCidr" type="text" value="172.16.0.0/16" inputmode="decimal" spellcheck="false" aria-describedby="parent-hint" required>
+        <div class="network-options">
+          <div class="field-group parent-field">
+            <label for="parent-cidr">Parent network</label>
+            <div class="input-hint" id="parent-hint">IPv4 address with CIDR prefix</div>
+            <input id="parent-cidr" name="parentCidr" type="text" value="172.16.0.0/16" inputmode="decimal" spellcheck="false" aria-describedby="parent-hint" required>
+          </div>
+          <div class="field-group mode-field">
+            <label for="addressing-mode">Addressing mode</label>
+            <select id="addressing-mode" name="addressingMode" aria-describedby="mode-hint">
+              <option value="standard">Standard IPv4</option>
+              <option value="aws">☁️ AWS VPC</option>
+              <option value="azure">☁️ Azure Virtual Network</option>
+            </select>
+            <div class="mode-hint" id="mode-hint"></div>
+          </div>
         </div>
 
         <div class="requirements-heading">
@@ -79,6 +90,7 @@
             <label><input type="checkbox" value="subnetMask" checked> <span>Mask</span></label>
             <label><input type="checkbox" value="usableHosts" checked> <span>Usable hosts</span></label>
             <label><input type="checkbox" value="requiredHosts"> <span>Required hosts</span></label>
+            <label><input type="checkbox" value="reservedAddresses"> <span>Reserved addresses</span></label>
             <label><input type="checkbox" value="totalAddresses"> <span>Total addresses</span></label>
           </div>
         </fieldset>
@@ -97,6 +109,7 @@
         <div>
           <p class="step-label">02 / Allocation</p>
           <h2 id="results-heading">Your VLSM plan</h2>
+          <p class="result-mode" id="result-mode"></p>
         </div>
         <div class="export-actions">
           <button class="button button-secondary" id="copy-button" type="button">Copy table</button>
@@ -144,11 +157,33 @@
       </div>
       <p class="result-status" id="result-status" role="status" aria-live="polite"></p>
     </section>
+
+    <section class="panel utility-panel" aria-labelledby="overlap-heading">
+      <div class="section-heading utility-heading">
+        <div>
+          <p class="step-label">Network utility</p>
+          <h2 id="overlap-heading">CIDR overlap checker</h2>
+          <p>Compare two IPv4 CIDR blocks, including `/31` and `/32` ranges.</p>
+        </div>
+      </div>
+      <form id="overlap-form" class="overlap-form" novalidate>
+        <div class="field-group">
+          <label for="overlap-left">First CIDR</label>
+          <input id="overlap-left" type="text" placeholder="10.0.0.0/24" inputmode="decimal" spellcheck="false" required>
+        </div>
+        <div class="field-group">
+          <label for="overlap-right">Second CIDR</label>
+          <input id="overlap-right" type="text" placeholder="10.0.0.128/25" inputmode="decimal" spellcheck="false" required>
+        </div>
+        <button class="button button-secondary" type="submit">Check overlap</button>
+      </form>
+      <p id="overlap-result" class="overlap-result" role="status" aria-live="polite" hidden></p>
+    </section>
   </main>
 
   <footer>
     <div class="shell footer-content">
-      <span>VLSM Calculator <span class="version">v0.3.0</span></span>
+      <span>VLSM Calculator <span class="version">v0.4.0</span></span>
       <span>Static by design. Your data stays local.</span>
     </div>
   </footer>

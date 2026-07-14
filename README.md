@@ -9,7 +9,9 @@ A static, browser-based IPv4 subnet planner. Provide a parent CIDR block and hos
 
 - Parent CIDR parsing and network-boundary normalisation
 - Largest-first allocation using traditional IPv4 subnet semantics (`/30` minimum)
+- AWS VPC and Azure virtual network reservation modes with provider-specific prefix limits
 - Parent-range and IPv4 overflow protection
+- Standalone CIDR overlap detection for `/0` through `/32`, including containment and adjacency
 - Accessible validation and allocation feedback
 - Selectable output columns and spreadsheet-friendly semantic tables
 - Allocation totals and address-space utilisation

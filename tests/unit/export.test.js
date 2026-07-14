@@ -31,6 +31,7 @@ test('neutralises spreadsheet formulas in CSV values', () => {
 
 test('creates a valid two-worksheet XLSX package without formula cells', () => {
   const result = {
+    addressingMode: { label: 'AWS VPC' },
     parent: {
       cidr: '10.0.0.0/24', network: '10.0.0.0', broadcast: '10.0.0.255',
       subnetMask: '255.255.255.0', totalAddresses: 256
@@ -53,4 +54,5 @@ test('creates a valid two-worksheet XLSX package without formula cells', () => {
   assert.match(entries.get('xl/workbook.xml'), /name="Summary"/);
   assert.match(entries.get('xl/worksheets/sheet1.xml'), /<t xml:space="preserve">=malicious<\/t>/);
   assert.doesNotMatch(entries.get('xl/worksheets/sheet1.xml'), /<f>/);
+  assert.match(entries.get('xl/worksheets/sheet2.xml'), /AWS VPC/);
 });

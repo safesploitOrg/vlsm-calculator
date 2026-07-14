@@ -1,15 +1,29 @@
 import { parseCidr } from './cidr.js';
+import { getAddressingMode, maximumHostsForMode } from './addressing-modes.js';
 
-const MAX_TRADITIONAL_HOSTS = (2 ** 32) - 2;
-
-export function validateAllocationRequest({ parentCidr, subnets }) {
+export function validateAllocationRequest({ parentCidr, subnets, addressingMode = 'standard' }) {
   const errors = [];
   let parent;
+  let policy;
+
+  try {
+    policy = getAddressingMode(addressingMode);
+  } catch (error) {
+    errors.push(error.message);
+  }
 
   try {
     parent = parseCidr(parentCidr);
   } catch (error) {
     errors.push(error.message);
+  }
+
+  if (parent && policy &&
+      (parent.prefix < policy.minimumPrefix || parent.prefix > policy.maximumPrefix)) {
+    errors.push(
+      `${policy.label} parent networks must use a prefix between ` +
+      `/${policy.minimumPrefix} and /${policy.maximumPrefix}.`
+    );
   }
 
   if (!Array.isArray(subnets) || subnets.length === 0) {
@@ -33,8 +47,8 @@ export function validateAllocationRequest({ parentCidr, subnets }) {
 
     if (!/^\d+$/.test(hostText) || !Number.isSafeInteger(requiredHosts) || requiredHosts < 1) {
       errors.push(`Subnet ${row} must require at least 1 whole host.`);
-    } else if (requiredHosts > MAX_TRADITIONAL_HOSTS) {
-      errors.push(`Subnet ${row} exceeds the IPv4 host limit.`);
+    } else if (policy && requiredHosts > maximumHostsForMode(policy)) {
+      errors.push(`Subnet ${row} exceeds the ${policy.label} host limit.`);
     }
 
     return { name, requiredHosts, originalIndex: index };
@@ -46,7 +60,7 @@ export function validateAllocationRequest({ parentCidr, subnets }) {
 
   return {
     valid: true,
-    value: { parent, subnets: validatedSubnets },
+    value: { parent, subnets: validatedSubnets, addressingMode: policy.id },
     notices: parent.wasNormalised
       ? [`${parent.suppliedAddress}/${parent.prefix} was normalised to ${parent.cidr}.`]
       : []

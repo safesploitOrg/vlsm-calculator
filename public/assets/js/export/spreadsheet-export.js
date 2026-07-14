@@ -68,6 +68,7 @@ function createPlanWorksheet(tableData) {
 
 function createSummaryWorksheet(result, version, generatedAt) {
   const rows = [
+    ['Addressing mode', result.addressingMode?.label ?? 'Standard IPv4'],
     ['Parent network', result.parent.cidr],
     ['Network address', result.parent.network],
     ['Broadcast address', result.parent.broadcast],

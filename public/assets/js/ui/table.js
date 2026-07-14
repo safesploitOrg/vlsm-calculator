@@ -7,6 +7,7 @@ export const COLUMN_DEFINITIONS = {
   subnetMask: { heading: 'Subnet mask', value: (allocation) => allocation.subnetMask },
   usableHosts: { heading: 'Usable hosts', value: (allocation) => allocation.usableHosts },
   requiredHosts: { heading: 'Required hosts', value: (allocation) => allocation.requiredHosts },
+  reservedAddresses: { heading: 'Reserved addresses', value: (allocation) => allocation.reservedAddresses },
   totalAddresses: { heading: 'Total addresses', value: (allocation) => allocation.totalAddresses }
 };
 

@@ -323,6 +323,7 @@ This avoids maintaining separate calculation paths for the web table and downloa
 ```javascript
 {
   parentCidr: "172.16.0.0/24",
+  addressingMode: "standard",
   subnets: [
     {
       name: "Management",
@@ -340,6 +341,10 @@ This avoids maintaining separate calculation paths for the web table and downloa
 
 ```javascript
 {
+  addressingMode: {
+    id: "standard",
+    label: "Standard IPv4"
+  },
   parent: {
     cidr: "172.16.0.0/24",
     network: "172.16.0.0",
@@ -363,6 +368,7 @@ This avoids maintaining separate calculation paths for the web table and downloa
       subnetMask: "255.255.255.192",
       prefix: 26,
       usableHosts: 62,
+      reservedAddresses: 2,
       totalAddresses: 64
     }
   ]
@@ -437,6 +443,24 @@ The application should explicitly define its treatment of:
 - `/32` host routes
 
 The initial implementation may use traditional subnet semantics and restrict generated user subnets to `/30` or larger. Future support for `/31` and `/32` should be an explicit feature rather than accidental behaviour.
+
+The standalone overlap checker may inspect `/31` and `/32` ranges without enabling those prefixes in the VLSM allocator.
+
+### 7.6 Provider reserved-address modes
+
+Addressing rules are selected explicitly and applied consistently by validation, sizing and allocation:
+
+| Mode | Allowed prefix range | Reserved addresses per subnet | First assignable offset |
+|---|---:|---:|---:|
+| Standard IPv4 | `/0` to `/30` | 2 | network + 1 |
+| AWS VPC | `/16` to `/28` | 5 | network + 4 |
+| Azure virtual network | `/2` to `/29` | 5 | network + 4 |
+
+Changing mode invalidates the current rendered result. The selected mode is retained in browser storage and included in spreadsheet summary metadata.
+
+### 7.7 CIDR overlap detection
+
+Overlap checks operate on canonical integer ranges and distinguish equal, containing, contained, adjacent and separate CIDRs. Generated allocations are also scanned defensively before a plan is returned. Equal and contained ranges count as overlaps; adjacent ranges do not.
 
 ---
 
@@ -962,12 +986,13 @@ User input must be treated as untrusted in both the browser and downloaded sprea
 
 Potential features:
 
-- [ ] AWS VPC reserved-address mode
-- [ ] Azure virtual network reserved-address mode
+- [x] AWS VPC reserved-address mode
+- [x] Azure virtual network reserved-address mode
 - [ ] `/31` point-to-point mode
 - [ ] VLAN ID and gateway columns
 - [ ] Route summarisation
-- [ ] CIDR overlap detection
+- [x] CIDR overlap detection
+  - [x] Add unit tests for equal, contained, adjacent, separate, `/31`, and `/32` ranges
 - [ ] Import/export using JSON or YAML
 - [ ] Homelab addressing-plan templates
 - [ ] IPv6 prefix-planning support

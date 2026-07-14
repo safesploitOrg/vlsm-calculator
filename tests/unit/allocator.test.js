@@ -4,16 +4,82 @@ import test from 'node:test';
 import { allocateVlsm, subnetSizeForHosts } from '../../public/assets/js/core/allocator.js';
 import { parseCidr } from '../../public/assets/js/core/cidr.js';
 
-function request(cidr, subnets) {
+function request(cidr, subnets, addressingMode = 'standard') {
   return {
     parent: parseCidr(cidr),
-    subnets: subnets.map((subnet, originalIndex) => ({ ...subnet, originalIndex }))
+    subnets: subnets.map((subnet, originalIndex) => ({ ...subnet, originalIndex })),
+    addressingMode
   };
 }
 
 test('uses traditional subnet semantics with /30 as the minimum', () => {
-  assert.deepEqual(subnetSizeForHosts(1), { totalAddresses: 4, prefix: 30, usableHosts: 2 });
-  assert.deepEqual(subnetSizeForHosts(50), { totalAddresses: 64, prefix: 26, usableHosts: 62 });
+  assert.deepEqual(subnetSizeForHosts(1), {
+    totalAddresses: 4,
+    prefix: 30,
+    usableHosts: 2,
+    reservedAddresses: 2,
+    firstUsableOffset: 1
+  });
+  assert.deepEqual(subnetSizeForHosts(50), {
+    totalAddresses: 64,
+    prefix: 26,
+    usableHosts: 62,
+    reservedAddresses: 2,
+    firstUsableOffset: 1
+  });
+});
+
+test('applies AWS VPC reservations and subnet-size limits', () => {
+  assert.deepEqual(subnetSizeForHosts(11, 'aws'), {
+    totalAddresses: 16,
+    prefix: 28,
+    usableHosts: 11,
+    reservedAddresses: 5,
+    firstUsableOffset: 4
+  });
+  assert.equal(subnetSizeForHosts(12, 'aws').prefix, 27);
+  assert.throws(() => subnetSizeForHosts(65_532, 'aws'), /between \/16 and \/28/);
+});
+
+test('allocates AWS VPC subnets from the fourth host offset', () => {
+  const result = allocateVlsm(request('10.0.0.0/24', [
+    { name: 'Application', requiredHosts: 11 }
+  ], 'aws'));
+
+  assert.deepEqual(result.allocations[0], {
+    name: 'Application',
+    requiredHosts: 11,
+    cidr: '10.0.0.0/28',
+    network: '10.0.0.0',
+    firstHost: '10.0.0.4',
+    lastHost: '10.0.0.14',
+    broadcast: '10.0.0.15',
+    subnetMask: '255.255.255.240',
+    prefix: 28,
+    usableHosts: 11,
+    reservedAddresses: 5,
+    totalAddresses: 16
+  });
+  assert.equal(result.addressingMode.id, 'aws');
+});
+
+test('applies Azure reservations with /29 as the smallest subnet', () => {
+  assert.equal(subnetSizeForHosts(3, 'azure').prefix, 29);
+  assert.equal(subnetSizeForHosts(4, 'azure').prefix, 28);
+
+  const result = allocateVlsm(request('10.0.0.0/24', [
+    { name: 'Workload', requiredHosts: 3 }
+  ], 'azure'));
+  assert.equal(result.allocations[0].firstHost, '10.0.0.4');
+  assert.equal(result.allocations[0].lastHost, '10.0.0.6');
+  assert.equal(result.allocations[0].reservedAddresses, 5);
+});
+
+test('rejects provider parent networks outside the supported prefix range', () => {
+  assert.throws(
+    () => allocateVlsm(request('10.0.0.0/15', [{ name: 'App', requiredHosts: 10 }], 'aws')),
+    /AWS VPC parent networks.*\/16 and \/28/
+  );
 });
 
 test('allocates the example plan largest-first on valid boundaries', () => {
