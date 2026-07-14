@@ -157,7 +157,7 @@ The repository will be restructured so that deployable web content is contained 
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml
-│       └── deploy.yml    # Static web (depends on ci.yml)
+│       └── deploy.yml
 │
 ├── public/
 │   ├── index.html
@@ -202,16 +202,16 @@ The repository will be restructured so that deployable web content is contained 
 
 ### 4.1 Directory responsibilities
 
-| Path | Responsibility |
-|---|---|
-| `/public` | Deployable static application |
-| `/public/assets/js/core` | Pure calculation and validation logic |
-| `/public/assets/js/ui` | DOM rendering and user interaction |
+| Path                      | Responsibility                          |
+|---------------------------|-----------------------------------------|
+| `/public`                 | Deployable static application |
+| `/public/assets/js/core`  | Pure calculation and validation logic |
+| `/public/assets/js/ui`    | DOM rendering and user interaction |
 | `/public/assets/js/export` | CSV and spreadsheet generation |
-| `/tests/unit` | Deterministic tests for calculation functions |
-| `/tests/integration` | Browser or DOM-level workflow tests |
-| `/.github/workflows` | CI and deployment automation |
-| `/scripts` | Repository validation and maintenance scripts |
+| `/tests/unit`             | Deterministic tests for calculation functions |
+| `/tests/integration`      | Browser or DOM-level workflow tests |
+| `/.github/workflows`      | CI and deployment automation |
+| `/scripts`                | Repository validation and maintenance scripts |
 
 ---
 
@@ -908,6 +908,7 @@ User input must be treated as untrusted in both the browser and downloaded sprea
 **Objective:** Automatically publish validated builds.
 
 - [ ] Add `.github/workflows/deploy.yml`
+  - deploy a static web (depends on ci.yml)
 - [ ] Trigger deployment only after successful CI
 - [ ] Deploy `/public` to the static web server
 - [ ] Use least-privilege deployment credentials
