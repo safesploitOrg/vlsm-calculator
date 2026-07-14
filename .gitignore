@@ -37,3 +37,6 @@ __pycache__/
 # System files
 ehthumbs.db
 Desktop.ini
+
+# Legacy / backup files
+_legacy/

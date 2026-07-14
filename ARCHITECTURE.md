@@ -840,106 +840,106 @@ User input must be treated as untrusted in both the browser and downloaded sprea
 
 **Objective:** Establish a predictable project and deployment layout.
 
-- [ ] Move deployable web application files into `/public`
-- [ ] Create `.github/workflows/`
+- [x] Move deployable web application files into `/public`
+- [x] Create `.github/workflows/`
 - [ ] Add `/tests/unit` and `/tests/integration`
-- [ ] Add `package.json` and lock file for development tooling
-- [ ] Update relative asset paths
-- [ ] Update README deployment and development instructions
-- [ ] Keep `ARCHITECTURE.md` at the repository root
+- [x] Add `package.json` and lock file for development tooling
+- [x] Update relative asset paths
+- [x] Update README deployment and development instructions
+- [x] Keep `ARCHITECTURE.md` at the repository root
 
 ### Phase 2: Calculation-engine refactor
 
 **Objective:** Make the VLSM logic correct, reusable and testable.
 
-- [ ] Replace the shared global namespace with ES modules
-- [ ] Separate calculation logic from DOM operations
-- [ ] Parse the parent network as CIDR
-- [ ] Calculate and enforce parent network boundaries
-- [ ] Normalise or reject non-network starting addresses
-- [ ] Detect insufficient address space
-- [ ] Prevent overlapping allocations
-- [ ] Prevent IPv4 integer overflow
-- [ ] Define `/31` and `/32` behaviour
-- [ ] Return structured allocation results
+- [x] Replace the shared global namespace with ES modules
+- [x] Separate calculation logic from DOM operations
+- [x] Parse the parent network as CIDR
+- [x] Calculate and enforce parent network boundaries
+- [x] Normalise or reject non-network starting addresses
+- [x] Detect insufficient address space
+- [x] Prevent overlapping allocations
+- [x] Prevent IPv4 integer overflow
+- [x] Define `/31` and `/32` behaviour
+- [x] Return structured allocation results
 
 ### Phase 3: Validation and error handling
 
 **Objective:** Prevent plausible-looking but invalid network plans.
 
-- [ ] Validate IPv4 addresses and prefixes
-- [ ] Validate required host counts
-- [ ] Reject empty or duplicate subnet names where appropriate
-- [ ] Provide actionable error messages
+- [x] Validate IPv4 addresses and prefixes
+- [x] Validate required host counts
+- [x] Reject empty or duplicate subnet names where appropriate
+- [x] Provide actionable error messages
 - [ ] Add capacity summary before allocation
-- [ ] Show required, allocated and remaining address counts
-- [ ] Add accessible status and error regions
+- [x] Show required, allocated and remaining address counts
+- [x] Add accessible status and error regions
 
 ### Phase 4: Automated testing
 
 **Objective:** Protect network-calculation correctness.
 
-- [ ] Add unit tests for IPv4 conversion
-- [ ] Add unit tests for prefix and mask conversion
-- [ ] Add unit tests for subnet sizing
-- [ ] Add unit tests for alignment and allocation
-- [ ] Add overflow and boundary tests
+- [x] Add unit tests for IPv4 conversion
+- [x] Add unit tests for prefix and mask conversion
+- [x] Add unit tests for subnet sizing
+- [x] Add unit tests for alignment and allocation
+- [x] Add overflow and boundary tests
 - [ ] Add DOM integration tests
-- [ ] Add spreadsheet export tests
+- [x] Add spreadsheet export tests
 - [ ] Add a browser smoke test
-- [ ] Define an acceptable coverage threshold
+- [x] Define an acceptable coverage threshold
 
 ### Phase 5: Continuous integration
 
 **Objective:** Enforce repository quality before merge.
 
-- [ ] Add `.github/workflows/ci.yml`
-- [ ] Install dependencies using the lock file
-- [ ] Run linting
-- [ ] Run unit tests
+- [x] Add `.github/workflows/ci.yml`
+- [x] Install dependencies using the lock file
+- [x] Run linting
+- [x] Run unit tests
 - [ ] Run integration tests
-- [ ] Validate static HTML and assets
-- [ ] Run dependency audit
-- [ ] Package `/public` as a deployment artefact
+- [x] Validate static HTML and assets
+- [x] Run dependency audit
+- [x] Package `/public` as a deployment artefact
 - [ ] Require CI checks on the main branch
 
 ### Phase 6: Static deployment
 
 **Objective:** Automatically publish validated builds.
 
-- [ ] Add `.github/workflows/deploy.yml`
+- [x] Add `.github/workflows/deploy.yml`
   - deploy a static web (depends on ci.yml)
-- [ ] Trigger deployment only after successful CI
-- [ ] Deploy `/public` to the static web server
-- [ ] Use least-privilege deployment credentials
-- [ ] Add deployment concurrency controls
-- [ ] Retain versioned deployment artefacts
-- [ ] Document rollback procedure
-- [ ] Verify the production URL after deployment
+- [x] Trigger deployment only after successful CI
+- [x] Deploy `/public` to the static web server
+- [x] Use least-privilege deployment credentials
+- [x] Add deployment concurrency controls
+- [x] Retain versioned deployment artefacts
+- [x] Document rollback procedure
+- [x] Verify the production URL after deployment
 
 ### Phase 7: Spreadsheet and export features
 
 **Objective:** Improve operational use without removing existing workflows.
 
-- [ ] Preserve direct copy-and-paste into spreadsheet software
-- [ ] Add a **Download Spreadsheet** button
-- [ ] Generate `.xlsx` locally in the browser
-- [ ] Add a `Summary` worksheet
-- [ ] Add optional CSV export
-- [ ] Preserve user-selected column ordering
-- [ ] Protect exports against spreadsheet formula injection
-- [ ] Add file-name conventions such as `vlsm-plan-YYYY-MM-DD.xlsx`
+- [x] Preserve direct copy-and-paste into spreadsheet software
+- [x] Add a **Download Spreadsheet** button
+- [x] Generate `.xlsx` locally in the browser
+- [x] Add a `Summary` worksheet
+- [x] Add optional CSV export
+- [x] Preserve user-selected column ordering
+- [x] Protect exports against spreadsheet formula injection
+- [x] Add file-name conventions such as `vlsm-plan-YYYY-MM-DD.xlsx`
 - [ ] Verify compatibility with Excel, LibreOffice Calc and Google Sheets
 
 ### Phase 8: Security hardening
 
 **Objective:** Reduce browser and supply-chain risk.
 
-- [ ] Remove unsafe user-controlled `innerHTML`
-- [ ] Apply a restrictive Content Security Policy
+- [x] Remove unsafe user-controlled `innerHTML`
+- [x] Apply a restrictive Content Security Policy
 - [ ] Add security headers on the static server
-- [ ] Pin production and development dependencies
-- [ ] Add automated dependency scanning
+- [x] Pin production and development dependencies
+- [x] Add automated dependency scanning
 - [ ] Add secret scanning to CI
 - [ ] Document the application's local-processing privacy model
 
@@ -947,13 +947,13 @@ User input must be treated as untrusted in both the browser and downloaded sprea
 
 **Objective:** Make the calculator easier to use for real network planning.
 
-- [ ] Add example subnet plans
-- [ ] Add a reset button
-- [ ] Add duplicate-row functionality
-- [ ] Add responsive table behaviour
-- [ ] Add copy-to-clipboard feedback
-- [ ] Add remaining-capacity visualisation
-- [ ] Preserve form state locally where appropriate
+- [x] Add example subnet plans
+- [x] Add a reset button
+- [x] Add duplicate-row functionality
+- [x] Add responsive table behaviour
+- [x] Add copy-to-clipboard feedback
+- [x] Add remaining-capacity visualisation
+- [x] Preserve form state locally where appropriate
 - [ ] Add light and dark appearance support
 
 ### Phase 10: Advanced networking features

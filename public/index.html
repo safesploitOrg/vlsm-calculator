@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="description" content="Plan correctly aligned IPv4 VLSM subnets within a parent CIDR block.">
+  <title>VLSM Calculator</title>
+  <link rel="icon" type="image/png" sizes="100x100" href="assets/icons/favicon-calculator-100.png">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-content">
+      <a class="brand" href="./" aria-label="VLSM Calculator home">
+        <span class="brand-mark" aria-hidden="true">V</span>
+        <span>VLSM Calculator</span>
+      </a>
+      <a class="github-link" href="https://github.com/safesploitOrg/vlsm-calculator" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">IPv4 network planning</p>
+      <h1 id="page-title">Plan subnets without the guesswork.</h1>
+      <p>Enter a parent CIDR and the hosts each subnet needs. The calculator allocates efficient, non-overlapping blocks from largest to smallest.</p>
+    </section>
+
+    <form id="calculator-form" novalidate>
+      <section class="panel input-panel" aria-labelledby="plan-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="step-label">01 / Network plan</p>
+            <h2 id="plan-heading">Define your address space</h2>
+          </div>
+          <button class="button button-quiet" id="reset-button" type="button">Reset page</button>
+        </div>
+
+        <div class="field-group parent-field">
+          <label for="parent-cidr">Parent network</label>
+          <div class="input-hint" id="parent-hint">IPv4 address with CIDR prefix</div>
+          <input id="parent-cidr" name="parentCidr" type="text" value="172.16.0.0/16" inputmode="decimal" spellcheck="false" aria-describedby="parent-hint" required>
+        </div>
+
+        <div class="requirements-heading">
+          <div>
+            <h3>Subnet requirements</h3>
+            <p>Use the number of assignable host addresses each subnet needs.</p>
+          </div>
+          <div class="row-actions">
+            <button class="button button-secondary" id="add-subnet-button" type="button"><span aria-hidden="true">＋</span> Add subnet</button>
+            <button class="button button-secondary" id="duplicate-subnet-button" type="button">Duplicate last</button>
+          </div>
+        </div>
+
+        <div class="requirements-table-wrap">
+          <table class="requirements-table">
+            <thead>
+              <tr>
+                <th scope="col">Subnet name</th>
+                <th scope="col">Required hosts</th>
+                <th scope="col"><span class="visually-hidden">Action</span></th>
+              </tr>
+            </thead>
+            <tbody id="subnet-rows"></tbody>
+          </table>
+        </div>
+
+        <fieldset class="column-picker">
+          <legend>Output columns</legend>
+          <div class="checkbox-grid" id="column-picker">
+            <label><input type="checkbox" value="network"> <span>Network</span></label>
+            <label><input type="checkbox" value="cidr" checked> <span>CIDR</span></label>
+            <label><input type="checkbox" value="firstHost" checked> <span>First host</span></label>
+            <label><input type="checkbox" value="lastHost" checked> <span>Last host</span></label>
+            <label><input type="checkbox" value="broadcast" checked> <span>Broadcast</span></label>
+            <label><input type="checkbox" value="subnetMask" checked> <span>Mask</span></label>
+            <label><input type="checkbox" value="usableHosts" checked> <span>Usable hosts</span></label>
+            <label><input type="checkbox" value="requiredHosts"> <span>Required hosts</span></label>
+            <label><input type="checkbox" value="totalAddresses"> <span>Total addresses</span></label>
+          </div>
+        </fieldset>
+
+        <div id="messages" class="messages" role="alert" aria-live="assertive" tabindex="-1" hidden></div>
+
+        <div class="submit-row">
+          <button class="button button-primary" type="submit">Generate VLSM plan <span aria-hidden="true">→</span></button>
+          <p>Saved in this browser for 90 days.</p>
+        </div>
+      </section>
+    </form>
+
+    <section id="results" class="results" aria-labelledby="results-heading" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="step-label">02 / Allocation</p>
+          <h2 id="results-heading">Your VLSM plan</h2>
+        </div>
+        <div class="export-actions">
+          <button class="button button-secondary" id="copy-button" type="button">Copy table</button>
+          <button class="button button-secondary" id="spreadsheet-button" type="button">Download spreadsheet</button>
+          <button class="button button-secondary" id="csv-button" type="button">Download CSV</button>
+        </div>
+      </div>
+
+      <div class="summary-grid" aria-label="Allocation summary">
+        <article class="summary-card summary-primary">
+          <span>Parent network</span>
+          <strong id="summary-parent">—</strong>
+          <small id="summary-range">—</small>
+        </article>
+        <article class="summary-card">
+          <span>Total addresses</span>
+          <strong id="summary-total">—</strong>
+        </article>
+        <article class="summary-card">
+          <span>Requested hosts</span>
+          <strong id="summary-requested">—</strong>
+        </article>
+        <article class="summary-card">
+          <span>Allocated addresses</span>
+          <strong id="summary-allocated">—</strong>
+        </article>
+        <article class="summary-card">
+          <span>Remaining addresses</span>
+          <strong id="summary-remaining">—</strong>
+        </article>
+      </div>
+
+      <div class="utilisation-card">
+        <div class="utilisation-copy">
+          <span>Address-space utilisation</span>
+          <strong id="utilisation-value">0%</strong>
+        </div>
+        <div class="progress-track" role="progressbar" aria-label="Address-space utilisation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="utilisation-bar"></span>
+        </div>
+      </div>
+
+      <div class="results-table-wrap">
+        <table id="results-table" class="results-table"></table>
+      </div>
+      <p class="result-status" id="result-status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-content">
+      <span>VLSM Calculator <span class="version">v0.3.0</span></span>
+      <span>Static by design. Your data stays local.</span>
+    </div>
+  </footer>
+
+  <template id="subnet-row-template">
+    <tr>
+      <td><label><span class="visually-hidden">Subnet name</span><input class="subnet-name" type="text" autocomplete="off" required></label></td>
+      <td><label><span class="visually-hidden">Required hosts</span><input class="subnet-hosts" type="number" min="1" step="1" inputmode="numeric" required></label></td>
+      <td><button class="remove-row-button" type="button" aria-label="Remove subnet">Remove</button></td>
+    </tr>
+  </template>
+</body>
+</html>

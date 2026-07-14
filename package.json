@@ -1,0 +1,19 @@
+{
+  "name": "vlsm-calculator",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint public/assets/js tests scripts/*.mjs",
+    "test": "node --test tests/unit/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include='public/assets/js/core/*.js' --test-coverage-include='public/assets/js/export/csv-export.js' --test-coverage-include='public/assets/js/export/spreadsheet-export.js' --test-coverage-include='public/assets/js/ui/storage.js' --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-functions=90 tests/unit/*.test.js",
+    "check:static": "sh scripts/validate-static-site.sh",
+    "check": "npm run lint && npm run test:coverage && npm run check:static"
+  },
+  "devDependencies": {
+    "eslint": "10.6.0"
+  }
+}
