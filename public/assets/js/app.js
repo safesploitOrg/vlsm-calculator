@@ -1,6 +1,7 @@
 import { allocateVlsm } from './core/allocator.js';
 import { getAddressingMode } from './core/addressing-modes.js';
 import { compareCidrRanges } from './core/cidr.js';
+import { summarizeCidrs } from './core/route-summarization.js';
 import { validateAllocationRequest } from './core/validation.js';
 import { createCsv } from './export/csv-export.js';
 import { downloadBlob, downloadText } from './export/download.js';
@@ -24,12 +25,14 @@ import {
   selectedColumnKeys
 } from './ui/table.js';
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.1';
 
 const form = document.getElementById('calculator-form');
 const parentInput = document.getElementById('parent-cidr');
 const addressingModeInput = document.getElementById('addressing-mode');
 const modeHint = document.getElementById('mode-hint');
+const gatewayPositionInput = document.getElementById('gateway-position');
+const gatewayHint = document.getElementById('gateway-hint');
 const subnetRows = document.getElementById('subnet-rows');
 const subnetRowTemplate = document.getElementById('subnet-row-template');
 const addSubnetButton = document.getElementById('add-subnet-button');
@@ -47,6 +50,12 @@ const overlapForm = document.getElementById('overlap-form');
 const overlapLeftInput = document.getElementById('overlap-left');
 const overlapRightInput = document.getElementById('overlap-right');
 const overlapResult = document.getElementById('overlap-result');
+const routeSummaryForm = document.getElementById('route-summary-form');
+const routeCidrsInput = document.getElementById('route-cidrs');
+const routeSummaryResult = document.getElementById('route-summary-result');
+const routeSummaryStatus = document.getElementById('route-summary-status');
+const routeSummaryOutput = document.getElementById('route-summary-output');
+const utilitiesMenu = document.getElementById('utilities-menu');
 
 let currentResult = null;
 let browserStorage = null;
@@ -61,10 +70,12 @@ function calculatorState() {
   return {
     parentCidr: parentInput.value,
     addressingMode: addressingModeInput.value,
+    gatewayPosition: gatewayPositionInput.value,
     subnets: readSubnetRows(subnetRows),
     selectedColumns: selectedColumnKeys(columnPicker),
     overlapLeft: overlapLeftInput.value,
     overlapRight: overlapRightInput.value,
+    routeCidrs: routeCidrsInput.value,
     hasGeneratedPlan: currentResult !== null
   };
 }
@@ -79,6 +90,9 @@ function restoreCalculatorState(state) {
   }
   if ([...addressingModeInput.options].some((option) => option.value === state.addressingMode)) {
     addressingModeInput.value = state.addressingMode;
+  }
+  if ([...gatewayPositionInput.options].some((option) => option.value === state.gatewayPosition)) {
+    gatewayPositionInput.value = state.gatewayPosition;
   }
 
   const savedSubnets = Array.isArray(state.subnets)
@@ -103,12 +117,19 @@ function restoreCalculatorState(state) {
   if (typeof state.overlapRight === 'string') {
     overlapRightInput.value = state.overlapRight;
   }
+  if (typeof state.routeCidrs === 'string') {
+    routeCidrsInput.value = state.routeCidrs;
+  }
 }
 
 function updateAddressingModeHint() {
   const policy = getAddressingMode(addressingModeInput.value);
   modeHint.textContent = `${policy.description} Supported subnet range: ` +
     `/${policy.minimumPrefix}–/${policy.maximumPrefix}.`;
+  gatewayPositionInput.disabled = policy.gatewayIsProviderReserved;
+  gatewayHint.textContent = policy.gatewayIsProviderReserved
+    ? 'Provider managed at network + 1; workload addresses start separately.'
+    : 'Shown separately from the host range.';
 }
 
 function renderResult(result) {
@@ -121,7 +142,8 @@ function renderResult(result) {
   document.getElementById('summary-requested').textContent = result.summary.requestedHosts.toLocaleString();
   document.getElementById('summary-allocated').textContent = result.summary.allocatedAddresses.toLocaleString();
   document.getElementById('summary-remaining').textContent = result.summary.remainingAddresses.toLocaleString();
-  document.getElementById('result-mode').textContent = result.addressingMode.label;
+  document.getElementById('result-mode').textContent =
+    `${result.addressingMode.label} · Gateway: ${result.gatewayPosition.label}`;
 
   const utilisation = result.summary.utilisation;
   const progressBar = document.querySelector('.progress-track');
@@ -140,6 +162,7 @@ function generatePlan(event, { scroll = true } = {}) {
   const validation = validateAllocationRequest({
     parentCidr: parentInput.value,
     addressingMode: addressingModeInput.value,
+    gatewayPosition: gatewayPositionInput.value,
     subnets: readSubnetRows(subnetRows)
   });
 
@@ -248,6 +271,7 @@ function resetCalculator() {
   clearCalculatorState(browserStorage);
   form.reset();
   overlapForm.reset();
+  routeSummaryForm.reset();
   resetSubnetRows(subnetRows, subnetRowTemplate);
   clearMessages(messages);
   currentResult = null;
@@ -255,6 +279,10 @@ function resetCalculator() {
   resultStatus.textContent = '';
   overlapResult.hidden = true;
   overlapResult.textContent = '';
+  routeSummaryResult.hidden = true;
+  routeSummaryStatus.textContent = '';
+  routeSummaryOutput.replaceChildren();
+  utilitiesMenu.open = false;
   updateAddressingModeHint();
   parentInput.focus();
 }
@@ -287,6 +315,31 @@ function checkOverlap(event) {
   persistCalculatorState();
 }
 
+function summariseRoutes(event) {
+  event.preventDefault();
+  routeSummaryResult.classList.remove('is-error');
+  routeSummaryOutput.replaceChildren();
+
+  try {
+    const routes = routeCidrsInput.value.split(/[\s,]+/).filter(Boolean);
+    const summaries = summarizeCidrs(routes);
+    routeSummaryStatus.textContent =
+      `${routes.length} input route${routes.length === 1 ? '' : 's'} summarised to ` +
+      `${summaries.length} exact route${summaries.length === 1 ? '' : 's'}.`;
+    summaries.forEach((cidr) => {
+      const item = document.createElement('li');
+      item.textContent = cidr;
+      routeSummaryOutput.append(item);
+    });
+  } catch (error) {
+    routeSummaryStatus.textContent = error.message;
+    routeSummaryResult.classList.add('is-error');
+  }
+
+  routeSummaryResult.hidden = false;
+  persistCalculatorState();
+}
+
 form.addEventListener('submit', generatePlan);
 
 addSubnetButton.addEventListener('click', () => {
@@ -300,6 +353,7 @@ duplicateSubnetButton.addEventListener('click', () => {
   const last = rows.at(-1) ?? {};
   const row = appendSubnetRow(subnetRows, subnetRowTemplate, {
     name: last.name ? `${last.name} copy` : '',
+    vlanId: '',
     requiredHosts: last.requiredHosts
   });
   persistCalculatorState();
@@ -324,8 +378,15 @@ columnPicker.addEventListener('change', () => {
 form.addEventListener('input', persistCalculatorState);
 overlapForm.addEventListener('input', persistCalculatorState);
 overlapForm.addEventListener('submit', checkOverlap);
+routeSummaryForm.addEventListener('input', persistCalculatorState);
+routeSummaryForm.addEventListener('submit', summariseRoutes);
 addressingModeInput.addEventListener('change', () => {
   updateAddressingModeHint();
+  currentResult = null;
+  resultsSection.hidden = true;
+  persistCalculatorState();
+});
+gatewayPositionInput.addEventListener('change', () => {
   currentResult = null;
   resultsSection.hidden = true;
   persistCalculatorState();

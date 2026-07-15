@@ -4,15 +4,24 @@ import {
   integerToIpv4,
   prefixToMask
 } from './ipv4.js';
-import { getAddressingMode } from './addressing-modes.js';
+import {
+  GATEWAY_POSITIONS,
+  getAddressingMode,
+  getGatewayPosition
+} from './addressing-modes.js';
 import { findCidrOverlaps } from './cidr.js';
 
-export function subnetSizeForHosts(requiredHosts, addressingMode = 'standard') {
+export function subnetSizeForHosts(
+  requiredHosts,
+  addressingMode = 'standard',
+  gatewayPosition = 'last'
+) {
   if (!Number.isSafeInteger(requiredHosts) || requiredHosts < 1) {
     throw new Error('Required hosts must be a positive integer.');
   }
 
   const policy = getAddressingMode(addressingMode);
+  getGatewayPosition(gatewayPosition);
   const minimumSize = 2 ** (32 - policy.maximumPrefix);
   const totalAddresses = Math.max(
     minimumSize,
@@ -35,8 +44,17 @@ export function subnetSizeForHosts(requiredHosts, addressingMode = 'standard') {
   };
 }
 
-export function allocateVlsm({ parent, subnets, addressingMode = 'standard' }) {
+export function allocateVlsm({
+  parent,
+  subnets,
+  addressingMode = 'standard',
+  gatewayPosition = 'last'
+}) {
   const policy = getAddressingMode(addressingMode);
+  const requestedGatewayPosition = getGatewayPosition(gatewayPosition);
+  const effectiveGatewayPosition = policy.gatewayIsProviderReserved
+    ? GATEWAY_POSITIONS.provider
+    : requestedGatewayPosition;
   if (parent.prefix < policy.minimumPrefix || parent.prefix > policy.maximumPrefix) {
     throw new Error(
       `${policy.label} parent networks must use a prefix between ` +
@@ -50,7 +68,7 @@ export function allocateVlsm({ parent, subnets, addressingMode = 'standard' }) {
   let nextAddress = parent.networkInteger;
 
   for (const subnet of orderedSubnets) {
-    const sizing = subnetSizeForHosts(subnet.requiredHosts, policy);
+    const sizing = subnetSizeForHosts(subnet.requiredHosts, policy, requestedGatewayPosition.id);
     const network = nextAddress > MAX_IPV4
       ? nextAddress
       : alignToBoundary(nextAddress, sizing.totalAddresses);
@@ -63,13 +81,26 @@ export function allocateVlsm({ parent, subnets, addressingMode = 'standard' }) {
       );
     }
 
+    const providerGateway = policy.gatewayIsProviderReserved;
+    const gateway = providerGateway || requestedGatewayPosition.id === 'first'
+      ? network + (providerGateway ? policy.gatewayOffset : sizing.firstUsableOffset)
+      : broadcast - 1;
+    const firstHost = !providerGateway && requestedGatewayPosition.id === 'first'
+      ? gateway + 1
+      : network + sizing.firstUsableOffset;
+    const lastHost = !providerGateway && requestedGatewayPosition.id === 'last'
+      ? gateway - 1
+      : broadcast - 1;
+
     allocations.push({
       name: subnet.name,
+      vlanId: subnet.vlanId ?? null,
       requiredHosts: subnet.requiredHosts,
       cidr: `${integerToIpv4(network)}/${sizing.prefix}`,
       network: integerToIpv4(network),
-      firstHost: integerToIpv4(network + sizing.firstUsableOffset),
-      lastHost: integerToIpv4(broadcast - 1),
+      gateway: integerToIpv4(gateway),
+      firstHost: integerToIpv4(firstHost),
+      lastHost: integerToIpv4(lastHost),
       broadcast: integerToIpv4(broadcast),
       subnetMask: prefixToMask(sizing.prefix),
       prefix: sizing.prefix,
@@ -95,6 +126,7 @@ export function allocateVlsm({ parent, subnets, addressingMode = 'standard' }) {
   return {
     parent,
     addressingMode: policy,
+    gatewayPosition: effectiveGatewayPosition,
     summary: {
       requestedHosts,
       allocatedAddresses,

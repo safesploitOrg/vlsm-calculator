@@ -4,15 +4,16 @@ import test from 'node:test';
 import { allocateVlsm, subnetSizeForHosts } from '../../public/assets/js/core/allocator.js';
 import { parseCidr } from '../../public/assets/js/core/cidr.js';
 
-function request(cidr, subnets, addressingMode = 'standard') {
+function request(cidr, subnets, addressingMode = 'standard', gatewayPosition = 'last') {
   return {
     parent: parseCidr(cidr),
     subnets: subnets.map((subnet, originalIndex) => ({ ...subnet, originalIndex })),
-    addressingMode
+    addressingMode,
+    gatewayPosition
   };
 }
 
-test('uses traditional subnet semantics with /30 as the minimum', () => {
+test('uses traditional subnet capacity with /30 as the minimum', () => {
   assert.deepEqual(subnetSizeForHosts(1), {
     totalAddresses: 4,
     prefix: 30,
@@ -27,6 +28,7 @@ test('uses traditional subnet semantics with /30 as the minimum', () => {
     reservedAddresses: 2,
     firstUsableOffset: 1
   });
+  assert.equal(subnetSizeForHosts(126).prefix, 25);
 });
 
 test('applies AWS VPC reservations and subnet-size limits', () => {
@@ -48,9 +50,11 @@ test('allocates AWS VPC subnets from the fourth host offset', () => {
 
   assert.deepEqual(result.allocations[0], {
     name: 'Application',
+    vlanId: null,
     requiredHosts: 11,
     cidr: '10.0.0.0/28',
     network: '10.0.0.0',
+    gateway: '10.0.0.1',
     firstHost: '10.0.0.4',
     lastHost: '10.0.0.14',
     broadcast: '10.0.0.15',
@@ -61,6 +65,7 @@ test('allocates AWS VPC subnets from the fourth host offset', () => {
     totalAddresses: 16
   });
   assert.equal(result.addressingMode.id, 'aws');
+  assert.equal(result.gatewayPosition.id, 'provider');
 });
 
 test('applies Azure reservations with /29 as the smallest subnet', () => {
@@ -71,8 +76,33 @@ test('applies Azure reservations with /29 as the smallest subnet', () => {
     { name: 'Workload', requiredHosts: 3 }
   ], 'azure'));
   assert.equal(result.allocations[0].firstHost, '10.0.0.4');
+  assert.equal(result.allocations[0].gateway, '10.0.0.1');
   assert.equal(result.allocations[0].lastHost, '10.0.0.6');
   assert.equal(result.allocations[0].reservedAddresses, 5);
+});
+
+test('defaults the standard gateway to the last usable address outside the host range', () => {
+  const result = allocateVlsm(request('192.168.0.0/24', [
+    { name: 'Users', vlanId: 120, requiredHosts: 50 }
+  ]));
+
+  assert.equal(result.allocations[0].vlanId, 120);
+  assert.equal(result.allocations[0].firstHost, '192.168.0.1');
+  assert.equal(result.allocations[0].lastHost, '192.168.0.61');
+  assert.equal(result.allocations[0].gateway, '192.168.0.62');
+  assert.equal(result.allocations[0].usableHosts, 62);
+  assert.equal(result.gatewayPosition.id, 'last');
+});
+
+test('can place the standard gateway first without overlapping the host range', () => {
+  const result = allocateVlsm(request('192.168.0.0/24', [
+    { name: 'Users', requiredHosts: 50 }
+  ], 'standard', 'first'));
+
+  assert.equal(result.allocations[0].gateway, '192.168.0.1');
+  assert.equal(result.allocations[0].firstHost, '192.168.0.2');
+  assert.equal(result.allocations[0].lastHost, '192.168.0.62');
+  assert.equal(result.gatewayPosition.id, 'first');
 });
 
 test('rejects provider parent networks outside the supported prefix range', () => {
@@ -130,6 +160,8 @@ test('allocates safely at the IPv4 maximum boundary', () => {
     { name: 'Final block', requiredHosts: 2 }
   ]));
   assert.equal(result.allocations[0].broadcast, '255.255.255.255');
+  assert.equal(result.allocations[0].gateway, '255.255.255.254');
+  assert.equal(result.allocations[0].firstHost, '255.255.255.253');
 });
 
 test('returns a parent-range error rather than wrapping after the IPv4 maximum', () => {

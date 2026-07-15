@@ -23,8 +23,10 @@ test('persists calculator content for 90 days', () => {
   const now = Date.UTC(2026, 0, 1);
   const state = {
     parentCidr: '10.0.0.0/24',
-    subnets: [{ name: 'Users', requiredHosts: '20' }],
-    selectedColumns: ['cidr', 'firstHost']
+    gatewayPosition: 'last',
+    subnets: [{ name: 'Users', vlanId: '40', requiredHosts: '20' }],
+    selectedColumns: ['vlanId', 'cidr', 'gateway'],
+    routeCidrs: '10.0.0.0/25\n10.0.0.128/25'
   };
 
   assert.equal(saveCalculatorState(storage, state, now), true);

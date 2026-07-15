@@ -53,6 +53,14 @@
             </select>
             <div class="mode-hint" id="mode-hint"></div>
           </div>
+          <div class="field-group mode-field">
+            <label for="gateway-position">Gateway position</label>
+            <select id="gateway-position" name="gatewayPosition" aria-describedby="gateway-hint">
+              <option value="last" selected>Last usable address</option>
+              <option value="first">First usable address</option>
+            </select>
+            <div class="mode-hint" id="gateway-hint">Shown separately from the host range.</div>
+          </div>
         </div>
 
         <div class="requirements-heading">
@@ -71,6 +79,7 @@
             <thead>
               <tr>
                 <th scope="col">Subnet name</th>
+                <th scope="col">VLAN ID <span class="visually-hidden">(optional)</span></th>
                 <th scope="col">Required hosts</th>
                 <th scope="col"><span class="visually-hidden">Action</span></th>
               </tr>
@@ -82,8 +91,10 @@
         <fieldset class="column-picker">
           <legend>Output columns</legend>
           <div class="checkbox-grid" id="column-picker">
+            <label><input type="checkbox" value="vlanId" checked> <span>VLAN ID</span></label>
             <label><input type="checkbox" value="network"> <span>Network</span></label>
             <label><input type="checkbox" value="cidr" checked> <span>CIDR</span></label>
+            <label><input type="checkbox" value="gateway" checked> <span>Gateway</span></label>
             <label><input type="checkbox" value="firstHost" checked> <span>First host</span></label>
             <label><input type="checkbox" value="lastHost" checked> <span>Last host</span></label>
             <label><input type="checkbox" value="broadcast" checked> <span>Broadcast</span></label>
@@ -158,32 +169,66 @@
       <p class="result-status" id="result-status" role="status" aria-live="polite"></p>
     </section>
 
-    <section class="panel utility-panel" aria-labelledby="overlap-heading">
-      <div class="section-heading utility-heading">
-        <div>
-          <p class="step-label">Network utility</p>
-          <h2 id="overlap-heading">CIDR overlap checker</h2>
-          <p>Compare two IPv4 CIDR blocks, including `/31` and `/32` ranges.</p>
+    <section class="utilities-shell" aria-label="Network utilities">
+      <details class="panel utilities-menu" id="utilities-menu">
+        <summary>
+          <span>
+            <strong>Network utilities</strong>
+            <small>CIDR overlap checker and route summarisation</small>
+          </span>
+        </summary>
+        <div class="utilities-content">
+          <section class="utility-block" aria-labelledby="overlap-heading">
+            <div class="section-heading utility-heading">
+              <div>
+                <p class="step-label">Network utility</p>
+                <h2 id="overlap-heading">CIDR overlap checker</h2>
+                <p>Compare two IPv4 CIDR blocks, including `/31` and `/32` ranges.</p>
+              </div>
+            </div>
+            <form id="overlap-form" class="overlap-form" novalidate>
+              <div class="field-group">
+                <label for="overlap-left">First CIDR</label>
+                <input id="overlap-left" type="text" placeholder="10.0.0.0/24" inputmode="decimal" spellcheck="false" required>
+              </div>
+              <div class="field-group">
+                <label for="overlap-right">Second CIDR</label>
+                <input id="overlap-right" type="text" placeholder="10.0.0.128/25" inputmode="decimal" spellcheck="false" required>
+              </div>
+              <button class="button button-secondary" type="submit">Check overlap</button>
+            </form>
+            <p id="overlap-result" class="overlap-result" role="status" aria-live="polite" hidden></p>
+          </section>
+
+          <section class="utility-block" aria-labelledby="route-summary-heading">
+            <div class="section-heading utility-heading">
+              <div>
+                <p class="step-label">Network utility</p>
+                <h2 id="route-summary-heading">Route summarisation</h2>
+                <p>Aggregate IPv4 CIDRs without including addresses outside the supplied routes.</p>
+              </div>
+            </div>
+            <form id="route-summary-form" class="route-summary-form" novalidate>
+              <div class="field-group">
+                <label for="route-cidrs">Routes</label>
+                <textarea id="route-cidrs" rows="6" placeholder="10.0.0.0/25&#10;10.0.0.128/25" spellcheck="false" aria-describedby="route-summary-hint" required></textarea>
+                <div class="mode-hint" id="route-summary-hint">Enter one CIDR per line, or separate routes with commas or spaces.</div>
+              </div>
+              <button class="button button-secondary" type="submit">Summarise routes</button>
+            </form>
+            <div id="route-summary-result" class="route-summary-result" role="status" aria-live="polite" hidden>
+              <p id="route-summary-status"></p>
+              <ul id="route-summary-output"></ul>
+            </div>
+          </section>
         </div>
-      </div>
-      <form id="overlap-form" class="overlap-form" novalidate>
-        <div class="field-group">
-          <label for="overlap-left">First CIDR</label>
-          <input id="overlap-left" type="text" placeholder="10.0.0.0/24" inputmode="decimal" spellcheck="false" required>
-        </div>
-        <div class="field-group">
-          <label for="overlap-right">Second CIDR</label>
-          <input id="overlap-right" type="text" placeholder="10.0.0.128/25" inputmode="decimal" spellcheck="false" required>
-        </div>
-        <button class="button button-secondary" type="submit">Check overlap</button>
-      </form>
-      <p id="overlap-result" class="overlap-result" role="status" aria-live="polite" hidden></p>
+      </details>
     </section>
   </main>
 
   <footer>
     <div class="shell footer-content">
-      <span>VLSM Calculator <span class="version">v0.4.0</span></span>
+      <span>VLSM Calculator <span class="version">v0.5.1</span></span>
       <span>Static by design. Your data stays local.</span>
     </div>
   </footer>
@@ -191,6 +236,7 @@
   <template id="subnet-row-template">
     <tr>
       <td><label><span class="visually-hidden">Subnet name</span><input class="subnet-name" type="text" autocomplete="off" required></label></td>
+      <td><label><span class="visually-hidden">Optional VLAN ID</span><input class="subnet-vlan" type="number" min="1" max="4094" step="1" inputmode="numeric"></label></td>
       <td><label><span class="visually-hidden">Required hosts</span><input class="subnet-hosts" type="number" min="1" step="1" inputmode="numeric" required></label></td>
       <td><button class="remove-row-button" type="button" aria-label="Remove subnet">Remove</button></td>
     </tr>

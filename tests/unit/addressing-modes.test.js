@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   ADDRESSING_MODES,
+  GATEWAY_POSITIONS,
   getAddressingMode,
+  getGatewayPosition,
   maximumHostsForMode
 } from '../../public/assets/js/core/addressing-modes.js';
 
@@ -19,6 +21,13 @@ test('calculates the maximum assignable hosts for each provider', () => {
   assert.equal(maximumHostsForMode('standard'), (2 ** 32) - 2);
   assert.equal(maximumHostsForMode('aws'), 65_531);
   assert.equal(maximumHostsForMode('azure'), (2 ** 30) - 5);
+});
+
+test('validates selectable gateway positions', () => {
+  assert.equal(getGatewayPosition().id, 'last');
+  assert.equal(getGatewayPosition('first'), GATEWAY_POSITIONS.first);
+  assert.throws(() => getGatewayPosition('middle'), /Unsupported gateway position/);
+  assert.throws(() => getGatewayPosition('provider'), /Unsupported gateway position/);
 });
 
 test('rejects unsupported addressing policies', () => {

@@ -12,6 +12,9 @@ A static, browser-based IPv4 subnet planner. Provide a parent CIDR block and hos
 - AWS VPC and Azure virtual network reservation modes with provider-specific prefix limits
 - Parent-range and IPv4 overflow protection
 - Standalone CIDR overlap detection for `/0` through `/32`, including containment and adjacency
+- Optional, unique VLAN IDs and non-overlapping first/last gateway placement
+- Exact route summarisation that aggregates routes without broadening their address coverage
+- Collapsed network-utilities menu that keeps secondary tools out of the primary workflow
 - Accessible validation and allocation feedback
 - Selectable output columns and spreadsheet-friendly semantic tables
 - Allocation totals and address-space utilisation

@@ -36,7 +36,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -191,6 +192,8 @@ h3 {
 .button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
 .remove-row-button:focus-visible,
 a:focus-visible {
   outline: 3px solid rgba(86, 197, 138, 0.45);
@@ -233,8 +236,8 @@ a:focus-visible {
 
 .network-options {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(220px, 0.75fr));
+  gap: 24px;
 }
 
 .network-options .parent-field {
@@ -263,7 +266,8 @@ a:focus-visible {
 
 input[type="text"],
 input[type="number"],
-select {
+select,
+textarea {
   width: 100%;
   height: 48px;
   padding: 0 14px;
@@ -275,7 +279,8 @@ select {
 
 input[type="text"]:hover,
 input[type="number"]:hover,
-select:hover {
+select:hover,
+textarea:hover {
   border-color: #9eada4;
 }
 
@@ -338,6 +343,10 @@ select {
   border-radius: 10px;
 }
 
+.requirements-table {
+  min-width: 680px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -360,6 +369,10 @@ td {
 }
 
 .requirements-table th:nth-child(2) {
+  width: 120px;
+}
+
+.requirements-table th:nth-child(3) {
   width: 220px;
 }
 
@@ -582,9 +595,69 @@ input[type="checkbox"] {
   font-weight: 650;
 }
 
-.utility-panel {
+.utilities-shell {
   margin-top: 48px;
-  padding: clamp(24px, 5vw, 48px);
+}
+
+.utilities-menu > summary {
+  display: flex;
+  min-height: 84px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px clamp(24px, 5vw, 48px);
+  cursor: pointer;
+  list-style: none;
+}
+
+.utilities-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.utilities-menu > summary::after {
+  content: "+";
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--green-dark);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.utilities-menu[open] > summary::after {
+  content: "−";
+}
+
+.utilities-menu > summary strong,
+.utilities-menu > summary small {
+  display: block;
+}
+
+.utilities-menu > summary strong {
+  font-size: 17px;
+}
+
+.utilities-menu > summary small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.utilities-content {
+  padding: 0 clamp(24px, 5vw, 48px) clamp(24px, 5vw, 48px);
+  border-top: 1px solid var(--line);
+}
+
+.utility-block {
+  padding-top: 32px;
+}
+
+.utility-block + .utility-block {
+  margin-top: 36px;
+  border-top: 1px solid var(--line);
 }
 
 .utility-heading {
@@ -597,7 +670,8 @@ input[type="checkbox"] {
   color: var(--muted);
 }
 
-.overlap-form {
+.overlap-form,
+.route-summary-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   align-items: end;
@@ -606,6 +680,21 @@ input[type="checkbox"] {
 
 .overlap-form .button {
   min-height: 48px;
+}
+
+.route-summary-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.route-summary-form .button {
+  min-height: 48px;
+}
+
+textarea {
+  min-height: 142px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .overlap-result {
@@ -628,6 +717,45 @@ input[type="checkbox"] {
   border-color: #e7bcbc;
   color: #772323;
   background: var(--danger-soft);
+}
+
+.route-summary-result {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #b7d9c6;
+  border-radius: 8px;
+  color: var(--green-dark);
+  background: var(--soft);
+}
+
+.route-summary-result.is-error {
+  border-color: #e7bcbc;
+  color: #772323;
+  background: var(--danger-soft);
+}
+
+.route-summary-result p {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.route-summary-result ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-summary-result li {
+  padding: 5px 8px;
+  border: 1px solid rgba(20, 108, 67, 0.22);
+  border-radius: 6px;
+  background: var(--paper);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
 }
 
 footer {
@@ -669,7 +797,8 @@ footer {
 
 @media (max-width: 900px) {
   .network-options,
-  .overlap-form {
+  .overlap-form,
+  .route-summary-form {
     grid-template-columns: 1fr;
   }
 
@@ -678,6 +807,10 @@ footer {
   }
 
   .overlap-form .button {
+    justify-self: start;
+  }
+
+  .route-summary-form .button {
     justify-self: start;
   }
 
@@ -753,6 +886,10 @@ footer {
   }
 
   .requirements-table th:nth-child(2) {
+    width: 85px;
+  }
+
+  .requirements-table th:nth-child(3) {
     width: 130px;
   }
 
@@ -782,6 +919,10 @@ footer {
   }
 
   .overlap-form .button {
+    width: 100%;
+  }
+
+  .route-summary-form .button {
     width: 100%;
   }
 }

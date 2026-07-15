@@ -324,9 +324,11 @@ This avoids maintaining separate calculation paths for the web table and downloa
 {
   parentCidr: "172.16.0.0/24",
   addressingMode: "standard",
+  gatewayPosition: "last",
   subnets: [
     {
       name: "Management",
+      vlanId: 10,
       requiredHosts: 50
     },
     {
@@ -345,6 +347,10 @@ This avoids maintaining separate calculation paths for the web table and downloa
     id: "standard",
     label: "Standard IPv4"
   },
+  gatewayPosition: {
+    id: "last",
+    label: "Last usable address"
+  },
   parent: {
     cidr: "172.16.0.0/24",
     network: "172.16.0.0",
@@ -359,11 +365,13 @@ This avoids maintaining separate calculation paths for the web table and downloa
   allocations: [
     {
       name: "Management",
+      vlanId: 10,
       requiredHosts: 50,
       cidr: "172.16.0.0/26",
       network: "172.16.0.0",
+      gateway: "172.16.0.62",
       firstHost: "172.16.0.1",
-      lastHost: "172.16.0.62",
+      lastHost: "172.16.0.61",
       broadcast: "172.16.0.63",
       subnetMask: "255.255.255.192",
       prefix: 26,
@@ -461,6 +469,20 @@ Changing mode invalidates the current rendered result. The selected mode is reta
 ### 7.7 CIDR overlap detection
 
 Overlap checks operate on canonical integer ranges and distinguish equal, containing, contained, adjacent and separate CIDRs. Generated allocations are also scanned defensively before a plan is returned. Equal and contained ranges count as overlaps; adjacent ranges do not.
+
+### 7.8 VLAN IDs and gateways
+
+Each subnet may have an optional IEEE 802.1Q VLAN ID from 1 through 4094. VLAN IDs must be unique within a plan. A blank VLAN ID remains valid for routed or provider-managed networks where a VLAN label is not applicable.
+
+In Standard mode the gateway can use either the first or last usable address and defaults to the last. It is excluded from the displayed host range: selecting the first gateway starts the host range at `network + 2`, while selecting the last gateway ends it at `broadcast - 2`. The gateway remains one of the subnet's usable addresses, so traditional capacity and exact-fit subnet sizing do not change.
+
+AWS VPC and Azure virtual network gateways remain provider-managed at `network + 1`. Their workload host ranges already begin at `network + 4`, so the provider gateway does not overlap an assignable host address.
+
+The overlap checker and route summarisation interfaces are grouped inside a collapsed Network utilities disclosure. Their saved input remains available without competing visually with the primary VLSM workflow.
+
+### 7.9 Route summarisation
+
+Route summarisation accepts IPv4 CIDRs from `/0` through `/32`, canonicalises and sorts them, removes duplicate or contained ranges, and recursively combines adjacent address coverage where an exact CIDR representation exists. The result must cover exactly the supplied address union; it must not introduce addresses from gaps between routes.
 
 ---
 
@@ -989,8 +1011,9 @@ Potential features:
 - [x] AWS VPC reserved-address mode
 - [x] Azure virtual network reserved-address mode
 - [ ] `/31` point-to-point mode
-- [ ] VLAN ID and gateway columns
-- [ ] Route summarisation
+- [x] VLAN ID and gateway columns
+- [x] Route summarisation
+  - [x] Add unit tests for sibling, recursive, contained, disjoint, `/32`, and `/0` routes
 - [x] CIDR overlap detection
   - [x] Add unit tests for equal, contained, adjacent, separate, `/31`, and `/32` ranges
 - [ ] Import/export using JSON or YAML

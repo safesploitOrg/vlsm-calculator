@@ -1,6 +1,8 @@
 export const COLUMN_DEFINITIONS = {
+  vlanId: { heading: 'VLAN ID', value: (allocation) => allocation.vlanId ?? '' },
   network: { heading: 'Network', value: (allocation) => allocation.network },
   cidr: { heading: 'Network / CIDR', value: (allocation) => allocation.cidr },
+  gateway: { heading: 'Gateway', value: (allocation) => allocation.gateway },
   firstHost: { heading: 'First host', value: (allocation) => allocation.firstHost },
   lastHost: { heading: 'Last host', value: (allocation) => allocation.lastHost },
   broadcast: { heading: 'Broadcast', value: (allocation) => allocation.broadcast },

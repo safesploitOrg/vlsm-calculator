@@ -10,6 +10,7 @@ public/assets/js/core/addressing-modes.js
 public/assets/js/core/allocator.js
 public/assets/js/core/cidr.js
 public/assets/js/core/ipv4.js
+public/assets/js/core/route-summarization.js
 public/assets/js/core/validation.js
 public/assets/js/ui/storage.js
 "
